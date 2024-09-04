@@ -9,7 +9,7 @@ export default {
         './resources/views/**/*.blade.php',
         './resources/js/**/*.vue',
     ],
-
+    darkMode: ['selector', '.dark'],
     theme: {
         extend: {
             fontFamily: {
