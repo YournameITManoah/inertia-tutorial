@@ -3,6 +3,8 @@ import { ref, watch } from "vue";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { Head, Link, router } from "@inertiajs/vue3";
 
+import { watchDebounced } from "@vueuse/core";
+
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Paginator from "primevue/paginator";
@@ -11,25 +13,31 @@ import InputText from "primevue/inputtext";
 import IconField from "primevue/iconfield";
 import InputIcon from "primevue/inputicon";
 
-const props = defineProps({
-    users: Object,
-    filters: Object,
-});
+const props = defineProps<{
+    users: any;
+    filters: { search?: string };
+    can: { createUser: boolean };
+}>();
 
 const search = ref(props.filters.search);
 
-watch(search, (val) => {
-    router.get(
-        "/users",
-        { search: val },
-        { replace: true, preserveState: true }
-    );
-});
+watchDebounced(
+    search,
+    (val) => {
+        router.get(
+            "/users",
+            { search: val },
+            { replace: true, preserveState: true }
+        );
+    },
+    { debounce: 500 }
+);
 
-const onPageClick = (page) => {
+const onPageClick = (page: any) => {
     router.visit(
-        props.users.links.find((l) => l.label === (page.page + 1).toString())
-            .url,
+        props.users.links.find(
+            (l: any) => l.label === (page.page + 1).toString()
+        ).url,
         {
             replace: true,
         }
@@ -42,11 +50,19 @@ const onPageClick = (page) => {
 
     <AuthenticatedLayout>
         <template #header>
-            <h2
-                class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight"
-            >
-                Users
-            </h2>
+            <div class="flex items-center">
+                <h2
+                    class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight"
+                >
+                    Users
+                </h2>
+                <Link
+                    v-if="can.createUser"
+                    href="/users/create"
+                    class="text-blue-500 text-sm ml-3"
+                    >New User</Link
+                >
+            </div>
         </template>
 
         <div class="py-12">
@@ -74,7 +90,10 @@ const onPageClick = (page) => {
                     <Column field="name" header="Name"></Column>
                     <Column>
                         <template #body="slotProps">
-                            <Link :href="`/users/edit/${slotProps.data.id}`">
+                            <Link
+                                v-if="slotProps.data.can.edit"
+                                :href="`/users/edit/${slotProps.data.id}`"
+                            >
                                 Edit
                             </Link>
                         </template>
